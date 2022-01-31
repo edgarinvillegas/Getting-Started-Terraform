@@ -24,24 +24,25 @@ data "aws_ssm_parameter" "ami" {
 resource "aws_vpc" "vpc" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = "true"
-
+  tags = local.common_tags
 }
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
-
+  tags = local.common_tags
 }
 
 resource "aws_subnet" "subnet1" {
   cidr_block              = var.subnet_cidr
   vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = "true"
+  tags = local.common_tags
 }
 
 # ROUTING #
 resource "aws_route_table" "rtb" {
   vpc_id = aws_vpc.vpc.id
-
+  tags = local.common_tags
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
@@ -58,6 +59,7 @@ resource "aws_route_table_association" "rta-subnet1" {
 resource "aws_security_group" "nginx-sg" {
   name   = "nginx_sg"
   vpc_id = aws_vpc.vpc.id
+  tags = local.common_tags
 
   # HTTP access from anywhere
   ingress {
@@ -82,7 +84,7 @@ resource "aws_instance" "nginx1" {
   instance_type          = var.webserver_instance_type
   subnet_id              = aws_subnet.subnet1.id
   vpc_security_group_ids = [aws_security_group.nginx-sg.id]
-
+  tags = local.common_tags
   user_data = <<EOF
 #! /bin/bash
 sudo amazon-linux-extras install -y nginx1

@@ -26,3 +26,7 @@ variable http_port {
 }
 
 variable webserver_instance_type { default = "t2.micro" }
+
+variable company { default = "Globomantics" }
+variable project { type = string }
+variable billing_code { type = string }
