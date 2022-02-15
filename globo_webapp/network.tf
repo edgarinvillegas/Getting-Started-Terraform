@@ -1,12 +1,3 @@
-##################################################################################
-# PROVIDERS
-##################################################################################
-
-provider "aws" {
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
-  region     = var.aws_region
-}
 
 ##################################################################################
 # DATA
@@ -27,35 +18,35 @@ data "aws_availability_zones" "disponibles" {
 resource "aws_vpc" "vpc" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = "true"
-  tags = local.common_tags
+  tags                 = local.common_tags
 }
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
-  tags = local.common_tags
+  tags   = local.common_tags
 }
 
 resource "aws_subnet" "subnet1" {
   cidr_block              = var.subnet_cidr[0]
   vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = "true"
-  tags = local.common_tags
-  availability_zone = data.aws_availability_zones.disponibles.names[0]
+  tags                    = local.common_tags
+  availability_zone       = data.aws_availability_zones.disponibles.names[0]
 }
 
 resource "aws_subnet" "subnet2" {
   cidr_block              = var.subnet_cidr[1]
   vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = "true"
-  tags = local.common_tags
-  availability_zone = data.aws_availability_zones.disponibles.names[1]
+  tags                    = local.common_tags
+  availability_zone       = data.aws_availability_zones.disponibles.names[1]
 }
 
 
 # ROUTING #
 resource "aws_route_table" "rtb" {
   vpc_id = aws_vpc.vpc.id
-  tags = local.common_tags
+  tags   = local.common_tags
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
@@ -76,7 +67,7 @@ resource "aws_route_table_association" "rta-subnet2" {
 resource "aws_security_group" "nginx-sg" {
   name   = "nginx_sg"
   vpc_id = aws_vpc.vpc.id
-  tags = local.common_tags
+  tags   = local.common_tags
 
   # HTTP access from anywhere
   ingress {
@@ -99,7 +90,7 @@ resource "aws_security_group" "nginx-sg" {
 resource "aws_security_group" "alb_sg" {
   name   = "nginx_alb_sg"
   vpc_id = aws_vpc.vpc.id
-  tags = local.common_tags
+  tags   = local.common_tags
 
   # HTTP access from anywhere
   ingress {

@@ -1,3 +1,6 @@
+# aws_elb_service_account
+data "aws_elb_service_account" "root" {}
+
 # aws_lb
 resource "aws_lb" "nginx" {
   name               = "globo-web-alb"
@@ -6,9 +9,15 @@ resource "aws_lb" "nginx" {
   security_groups    = [aws_security_group.alb_sg.id]
   subnets            = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
 
-  enable_deletion_protection = true
+  enable_deletion_protection = false
 
   tags = local.common_tags
+
+  access_logs {
+    bucket  = aws_s3_bucket.web_bucket.bucket
+    prefix  = "alb-logs"
+    enabled = true
+  }
 }
 
 # aws_lb_target_group
