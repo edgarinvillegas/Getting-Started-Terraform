@@ -15,49 +15,21 @@ data "aws_availability_zones" "disponibles" {
 ##################################################################################
 
 # NETWORKING #
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+  version = "=3.10.0"
 
-resource "aws_vpc" "vpc" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_hostnames = "true"
+  cidr = var.vpc_cidr
+
+  azs             = slice(data.aws_availability_zones.disponibles.names, 0, (var.subnet_count))
+  public_subnets  = [ for subnet in range(var.subnet_count) : cidrsubnet(var.vpc_cidr, 8, subnet) ]
+
+  enable_nat_gateway = false
+  enable_vpn_gateway = false
+
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-vpc"
   })
-}
-
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.vpc.id
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-vpc"
-  })
-}
-
-resource "aws_subnet" "subnets" {
-  count                   = var.subnet_count
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index + 1)
-  vpc_id                  = aws_vpc.vpc.id
-  map_public_ip_on_launch = "true"
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-subnet-${count.index}"
-  })
-  availability_zone = data.aws_availability_zones.disponibles.names[count.index]
-}
-
-# ROUTING #
-resource "aws_route_table" "rtb" {
-  vpc_id = aws_vpc.vpc.id
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-rtb"
-  })
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-}
-
-resource "aws_route_table_association" "rta-subnets" {
-  count          = var.subnet_count
-  subnet_id      = aws_subnet.subnets[count.index].id
-  route_table_id = aws_route_table.rtb.id
 }
 
 # SECURITY GROUPS #
@@ -65,7 +37,8 @@ resource "aws_route_table_association" "rta-subnets" {
 resource "aws_security_group" "nginx-sg" {
 
   name   = "${local.name_prefix}-nginx_sg"
-  vpc_id = aws_vpc.vpc.id
+  # vpc_id = aws_vpc.vpc.id
+  vpc_id = module.vpc.vpc_id
   tags   = local.common_tags
 
   # HTTP access from anywhere
@@ -90,7 +63,7 @@ resource "aws_security_group" "nginx-sg" {
 # ALB security group
 resource "aws_security_group" "alb_sg" {
   name   = "${local.name_prefix}-nginx_alb_sg"
-  vpc_id = aws_vpc.vpc.id
+  vpc_id = module.vpc.vpc_id
   tags   = local.common_tags
 
   # HTTP access from anywhere
